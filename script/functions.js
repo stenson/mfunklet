@@ -101,7 +101,7 @@ var writeValuesIntoTable = function(patterns, trs, names) {
 
 var writeModifiersIntoTable = function(length, where, modifiedValues, hats) {
   var tds = [];
-  debugger;
+
   for(var i = 0; i < length; i++) {
     tds.push(writeValueIntoCell(0, where)
       .append($("<span class='plus'>+</span>"))
