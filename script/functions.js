@@ -1,12 +1,6 @@
 /* utilities */
 var getElement = document.getElementById.bind(document);
 
-var buildNames = function(a) {
-  return ([1,2,3,4]).map(function(i) {
-    return a+""+i;
-  })
-};
-
 var copyArray = function(arr) {
   return arr.map(function(v) { return v.concat([]) });
 };
@@ -48,7 +42,7 @@ var getBuffersFromSampleNames = function(names, context, callback) {
   var buffers = {};
   var queue = 0;
 
-  names.map(function(name) {
+  names.map(function(name, i) {
     var url = ["/sounds/", name, ".wav"].join("");
     queue++;
     loadSampleWithUrl(context, url, function(buffer) {

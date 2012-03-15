@@ -8,6 +8,8 @@ var mutes = [0, 0, 0];
 var rates = [1, 1, 1];
 var alts = [0, 0, 0];
 
+var NO_VOLUMES = false;
+
 (function readParams() {
   window.location.search.slice(1).split("&").forEach(function(param) {
     var ps = param.split("=");
@@ -21,17 +23,24 @@ var alts = [0, 0, 0];
   if (window.jd) jds = splitToCallback([jd], ",", parseFloat)[0];
   if (window.a) alts = splitToCallback([a], "", parseInt)[0];
   if (window.r) rates = splitToCallback([r], ",", parseFloat)[0];
+  if (window.maestro) NO_VOLUMES = true;
 })();
 
 var originals = copyArray(values);
 var length = 31;
 
-var bffs = {
-  hat:    { c: "hat",   o: "hat",   a: "cbell"  },
-  ohat:   { c: "ohat",  o: "ohat",  a: "obell"  },
-  snare:  { c: "snare", o: "snare", a: "click"  },
-  kick:   { c: "kick",  o: "kick",  a: "kick"   },
-};
+var bffs = NO_VOLUMES ?
+  {
+    hat:    { c: "maehat1",  o: "maehat1",  a: "maeblock" },
+    ohat:   { c: "maehat2",  o: "maehat2",  a: "maeclave" },
+    snare:  { c: "maesnare", o: "maesnare", a: "maebongo" },
+    kick:   { c: "maetom",   o: "maetom",   a: "maekick"  }
+  } : {
+    hat:    { c: "hat",   o: "hat",   a: "cbell"  },
+    ohat:   { c: "ohat",  o: "ohat",  a: "obell"  },
+    snare:  { c: "snare", o: "snare", a: "click"  },
+    kick:   { c: "kick",  o: "kick",  a: "kick"   }
+  };
 
 var names = [bffs.hat.o, bffs.snare.o, bffs.kick.o];
 
@@ -102,8 +111,8 @@ var play = function() {
   var hatBack = function(lag) {
     runLightsWithCallback(0, function(_i, vol) {
       var modified = modifiedValues[_i];
-      var buffer = buffers[bffs.hat.c + vol];
-      var modifiedBuffer = buffers[bffs.ohat.c + vol];
+      var bufferName = bffs.hat.c + vol;
+      var modifiedBufferName = bffs.ohat.c + vol;
 
       if (outstandingOpen && (vol || modified)) {
         outstandingOpen.noteOff(0); // kill the ringing hat
@@ -112,10 +121,14 @@ var play = function() {
 
       if (vol) {
         if (modified) {
-          outstandingOpen = playSampleWithBuffer(context, modifiedBuffer, 0, 1, rates[0]);
+          outstandingOpen = NO_VOLUMES ?
+            playSampleWithBuffer(context, buffers[modifiedBufferName.slice(0,-1)], 0, 1/(4/vol)/7, rates[0])
+            : playSampleWithBuffer(context, buffers[modifiedBufferName], 0, 1, rates[0]);
         }
         else {
-          playSampleWithBuffer(context, buffer, 0, 1, rates[0]);
+          NO_VOLUMES ?
+            playSampleWithBuffer(context, buffers[bufferName.slice(0,-1)], 0, 1/(4/vol)/7, rates[0])
+            : playSampleWithBuffer(context, buffers[bufferName], 0, 1, rates[0])
         }
       } else if (modified) {
         playSampleWithBuffer(context, buffers.foothat, 0, 1, rates[0]);
@@ -125,7 +138,11 @@ var play = function() {
 
   var snareBack = function(lag) {
     runLightsWithCallback(1, function(_i, vol) {
-      vol && playSampleWithBuffer(context, buffers[bffs.snare.c+vol], 0, 1, rates[1]);
+      if (NO_VOLUMES) {
+        vol && playSampleWithBuffer(context, buffers[bffs.snare.c], 0, 1/(4/vol)/1.5, rates[1]);
+      } else {
+        vol && playSampleWithBuffer(context, buffers[bffs.snare.c+vol], 0, 1, rates[1]);
+      }
     });
   };
 
@@ -133,7 +150,11 @@ var play = function() {
     if (lag > 2) return stop();
 
     runLightsWithCallback(2, function(_i, vol) {
-      vol && playSampleWithBuffer(context, buffers[bffs.kick.c+vol], 0, 1, rates[2]);
+      if (NO_VOLUMES) {
+        vol && playSampleWithBuffer(context, buffers[bffs.kick.c], 0, 1/(4/vol)*1.5, rates[2]);
+      } else {
+        vol && playSampleWithBuffer(context, buffers[bffs.kick.c+vol], 0, 1, rates[2]);
+      }
     });
   };
 
@@ -176,14 +197,25 @@ var play = function() {
 
 var loadEnvironment = function() {
   var indicator = getElement("indicator");
-  var sampleNames = (["foothat", "spring"])
-    .concat(buildNames(bffs.hat.o))
-    .concat(buildNames(bffs.hat.a))
-    .concat(buildNames(bffs.ohat.o))
-    .concat(buildNames(bffs.ohat.a))
-    .concat(buildNames(bffs.snare.o))
-    .concat(buildNames(bffs.snare.a))
-    .concat(buildNames(bffs.kick.o));
+
+  var buildNames = NO_VOLUMES ? function(a) {
+      return [a];
+    } : function(a) {
+      return ([1,2,3,4]).map(function(i) {
+        return a+""+i;
+      });
+    };
+
+  var sampleNames = (function(bffs) {
+    return (["foothat", "spring"])
+      .concat(buildNames(bffs.hat.o))
+      .concat(buildNames(bffs.hat.a))
+      .concat(buildNames(bffs.ohat.o))
+      .concat(buildNames(bffs.ohat.a))
+      .concat(buildNames(bffs.snare.o))
+      .concat(buildNames(bffs.snare.a))
+      .concat(buildNames(bffs.kick.o));
+  })(bffs);
 
   loadSampleWithUrl(context, "/sounds/spring.wav", function(spring) {
     convolver.buffer = spring;
