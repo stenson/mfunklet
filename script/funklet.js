@@ -31,15 +31,15 @@ var length = 31;
 
 var bffs = NO_VOLUMES ?
   {
-    hat:    { c: "maehat1",  o: "maehat1",  a: "maeblock" },
-    ohat:   { c: "maehat2",  o: "maehat2",  a: "maeclave" },
-    snare:  { c: "maesnare", o: "maesnare", a: "maebongo" },
-    kick:   { c: "maetom",   o: "maetom",   a: "maekick"  }
+    hat:    { c: "maestro/hat",   o: "maestro/hat",   a: "maestro/ahat"   },
+    ohat:   { c: "maestro/ohat",  o: "maestro/ohat",  a: "maestro/aohat"  },
+    snare:  { c: "maestro/snare", o: "maestro/snare", a: "maestro/asnare" },
+    kick:   { c: "maestro/kick",  o: "maestro/kick",  a: "maestro/akick"  }
   } : {
-    hat:    { c: "hat",   o: "hat",   a: "cbell"  },
-    ohat:   { c: "ohat",  o: "ohat",  a: "obell"  },
-    snare:  { c: "snare", o: "snare", a: "click"  },
-    kick:   { c: "kick",  o: "kick",  a: "kick"   }
+    hat:    { c: "standard/hat",   o: "standard/hat",   a: "standard/cbell"  },
+    ohat:   { c: "standard/ohat",  o: "standard/ohat",  a: "standard/obell"  },
+    snare:  { c: "standard/snare", o: "standard/snare", a: "standard/click"  },
+    kick:   { c: "standard/kick",  o: "standard/kick",  a: "standard/kick"   }
   };
 
 var names = [bffs.hat.o, bffs.snare.o, bffs.kick.o];
@@ -53,7 +53,6 @@ testForAudioSupport();
 
 listenForModifiers(modifiers, modifiedValues, values);
 listenForValuesFromRows(rows, values, 4, modifiers);
-listenForBpmChange(bpm, getElement("bpm"), getElement("bpm-form"), getElement("half-time"));
 listenForSwingChange(swing, getElement("swing-meter"), diagram);
 
 var arrFromSel = function(sel) {
@@ -77,6 +76,8 @@ var context = new webkitAudioContext();
 var convolver = context.createConvolver();
 var gainNode = context.createGainNode();
 var effectNode = context.createGainNode();
+
+listenForBpmChange(bpm, getElement("bpm"), getElement("bpm-form"), getElement("half-time"), context);
 
 gainNode.gain.value = 1.0;
 gainNode.connect(context.destination);
@@ -193,6 +194,10 @@ var play = function() {
       "&a=", alts.join("").replace(/false/g,"0").replace(/true/g,"1")
     ].join(""));
   });
+
+  // $(window).on("message", function() {
+  //   start();
+  // });
 };
 
 var loadEnvironment = function() {
@@ -214,7 +219,8 @@ var loadEnvironment = function() {
       .concat(buildNames(bffs.ohat.a))
       .concat(buildNames(bffs.snare.o))
       .concat(buildNames(bffs.snare.a))
-      .concat(buildNames(bffs.kick.o));
+      .concat(buildNames(bffs.kick.o))
+      .concat(NO_VOLUMES ? buildNames(bffs.kick.a) : []);
   })(bffs);
 
   loadSampleWithUrl(context, "/sounds/spring.wav", function(spring) {

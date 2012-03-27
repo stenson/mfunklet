@@ -158,7 +158,7 @@ var listenForModifiers = function(modifiers, modifiedValues, values) {
   });
 };
 
-var listenForBpmChange = function(bpm, el, form, halftime) {
+var listenForBpmChange = function(bpm, el, form, halftime, context) {
   var isHalftimed = false;
 
   var updateBpm = function() {
@@ -185,6 +185,20 @@ var listenForBpmChange = function(bpm, el, form, halftime) {
 
   el.value = bpm.value;
   updateBpm();
+
+  var lastMetronomeClick = null;
+
+  $(document).on("keydown", function(e) {
+    if (e.keyCode === 77) {
+      if (lastMetronomeClick && lastMetronomeClick < (context.currentTime + 2)) {
+        el.value = Math.round(60/(context.currentTime - lastMetronomeClick));
+        lastMetronomeClick = context.currentTime;
+        updateBpm();
+      } else {
+        lastMetronomeClick = context.currentTime;
+      }
+    }
+  });
 };
 
 var listenForSwingChange = function(swing, meter, diagram) {
