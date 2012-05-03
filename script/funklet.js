@@ -1,52 +1,52 @@
-var _32 = emptyArray.bind(null, 32);
-var values = ([_32(), _32(), _32()]);
-var modifiedValues = emptyArray(32);
-var bpm = { value: 120 };
-var swing = { value: 0 };
-var jds = [0, 0, 0];
+
+var params = readParams();
+
+var measures = params.m
+  ? parseInt(params.m, 10)
+    : null;
+
+var values = params.vals
+  ? splitToCallback(params.vals.split(";"), "", parseInt)
+    : [[], [], []];
+
+var modifiedValues = params.mods
+  ? splitToCallback([params.mods], ".", parseInt)[0]
+    : [];
+
+var bpm = params.b
+  ? { value: parseInt(params.b, 10) }
+    : { value: 120 };
+
+var swing = params.s
+  ? { value: parseInt(params.s, 10) }
+    : { value: 0 };
+
+var jds = params.jd
+  ? splitToCallback([params.jd], ",", parseFloat)[0]
+    : [0,0,0];
+
+var rates = params.r
+  ? splitToCallback([params.r], ",", parseFloat)[0]
+    : [1, 1, 1];
+
+var alts = params.a
+  ? splitToCallback([params.a], "", parseInt)[0]
+    : [0, 0, 0];
+
+var prefix = params.pf ? params.pf : "standard";
+var NO_VOLUMES = params.nv ? true : false;
+
+var count = padValues(values, measures);
 var mutes = [0, 0, 0];
-var rates = [1, 1, 1];
-var alts = [0, 0, 0];
-
-var NO_VOLUMES = false;
-
-(function readParams() {
-  window.location.search.slice(1).split("&").forEach(function(param) {
-    var ps = param.split("=");
-    window[ps[0]] = ps[1];
-  });
-
-  if (window.vals) values = splitToCallback(vals.split(";"), "", parseInt);
-  if (window.mods) modifiedValues = splitToCallback([mods], ".", parseInt)[0];
-  if (window.b) bpm.value = parseInt(b, 10);
-  if (window.s) swing.value = parseInt(s, 10);
-  if (window.jd) jds = splitToCallback([jd], ",", parseFloat)[0];
-  if (window.a) alts = splitToCallback([a], "", parseInt)[0];
-  if (window.r) rates = splitToCallback([r], ",", parseFloat)[0];
-  if (window.maestro) NO_VOLUMES = true;
-})();
-
 var originals = copyArray(values);
-var length = 31;
+var length = count - 1;
 
-var bffs = NO_VOLUMES ?
-  {
-    hat:    { c: "maestro/hat",   o: "maestro/hat",   a: "maestro/ahat"   },
-    ohat:   { c: "maestro/ohat",  o: "maestro/ohat",  a: "maestro/aohat"  },
-    snare:  { c: "maestro/snare", o: "maestro/snare", a: "maestro/asnare" },
-    kick:   { c: "maestro/kick",  o: "maestro/kick",  a: "maestro/akick"  }
-  } : {
-    hat:    { c: "standard/hat",   o: "standard/hat",   a: "standard/cbell"  },
-    ohat:   { c: "standard/ohat",  o: "standard/ohat",  a: "standard/obell"  },
-    snare:  { c: "standard/snare", o: "standard/snare", a: "standard/click"  },
-    kick:   { c: "standard/kick",  o: "standard/kick",  a: "standard/kick"   }
-  };
-
+var bffs = buffersWithPrefix(prefix);
 var names = [bffs.hat.o, bffs.snare.o, bffs.kick.o];
 
 var diagram = getElement("diagram");
 var trs = toarr(diagram.querySelectorAll(".tr"));
-var modifiers = writeModifiersIntoTable(length+1, trs[0], modifiedValues, values[0]);
+var modifiers = writeModifiersIntoTable(count, trs[0], modifiedValues, values[0]);
 var rows = writeValuesIntoTable(values, trs.slice(1), names);
 
 testForAudioSupport();
@@ -77,8 +77,6 @@ var convolver = context.createConvolver();
 var gainNode = context.createGainNode();
 var effectNode = context.createGainNode();
 
-listenForBpmChange(bpm, getElement("bpm"), getElement("bpm-form"), getElement("half-time"), context);
-
 gainNode.gain.value = 1.0;
 gainNode.connect(context.destination);
 effectNode.gain.value = 1.0;
@@ -91,6 +89,7 @@ var buffers = {};
 var play = function() {
   var startButton = getElement("start");
   var stopButton = getElement("stop");
+  var runCount = 0;
 
   var intervals = [];
 
@@ -111,6 +110,11 @@ var play = function() {
 
   var hatBack = function(lag) {
     runLightsWithCallback(0, function(_i, vol) {
+      var mod = _i % 32;
+      if (_i % 32 === 0) {
+        $("#grid").css({ top: (-(_i/32 * 93)) });
+      }
+
       var modified = modifiedValues[_i];
       var bufferName = bffs.hat.c + vol;
       var modifiedBufferName = bffs.ohat.c + vol;
@@ -160,6 +164,8 @@ var play = function() {
   };
 
   var start = function() {
+    runCount = 0;
+
     startButton.style.display = "none";
     stopButton.style.display = "block";
     intervals = [
@@ -182,6 +188,14 @@ var play = function() {
 
   listenForStartStop(start, stop);
   listenForShortcuts();
+  listenForBpmChange(bpm,
+    getElement("bpm"),
+    getElement("bpm-form"),
+    getElement("half-time"),
+    context,
+    start,
+    stop
+  );
   listenForSave(getElement("save"), function() {
     stop();
     return ([
@@ -194,10 +208,6 @@ var play = function() {
       "&a=", alts.join("").replace(/false/g,"0").replace(/true/g,"1")
     ].join(""));
   });
-
-  // $(window).on("message", function() {
-  //   start();
-  // });
 };
 
 var loadEnvironment = function() {
@@ -212,7 +222,7 @@ var loadEnvironment = function() {
     };
 
   var sampleNames = (function(bffs) {
-    return (["foothat", "spring"])
+    return (["foothat"])
       .concat(buildNames(bffs.hat.o))
       .concat(buildNames(bffs.hat.a))
       .concat(buildNames(bffs.ohat.o))
@@ -234,6 +244,7 @@ var loadEnvironment = function() {
 
   setTimeout(function() {
     getBuffersFromSampleNames(sampleNames, context, function(bs) {
+      buffers.spring = convolver.buffer;
       buffers = bs;
     });
   }, 100);

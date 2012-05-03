@@ -1,4 +1,15 @@
 /* utilities */
+var readParams = function() {
+  var params = {};
+
+  window.location.search.slice(1).split("&").forEach(function(param) {
+    var ps = param.split("=");
+    params[ps[0]] = ps[1];
+  });
+
+  return params;
+};
+
 var getElement = document.getElementById.bind(document);
 
 var copyArray = function(arr) {
@@ -23,6 +34,37 @@ var splitToCallback = function(arr, delim, fn) {
   });
 };
 
+var buffersWithPrefix = function(_prefix) {
+  var bffs = {};
+  var prefix = function(a) { return _prefix + "/" + a };
+
+  ["hat", "ohat", "snare", "kick"].forEach(function(key) {
+    bffs[key] = { c: prefix(key), o: prefix(key), a: prefix("a"+key) };
+  });
+
+  return bffs;
+};
+
+var padValues = function(values, userMeasures) {
+
+  var measures = userMeasures ? userMeasures
+    : Math.floor(values.reduce(function(acc, arr) {
+        return arr.length > acc ? arr.length : acc;
+      }, 0) / 32);
+
+  var count = (measures * 32) || 32;
+
+  // normalize the arrays
+  values.map(function(arr, n) {
+    for (var i = 0; i < count; i++) {
+      var v = arr[i];
+      values[n][i] = v ? v : 0;
+    }
+  });
+
+  return count;
+};
+
 /* sample loading */
 
 var loadSampleWithUrl = function(context, url, callback, progress) {
@@ -31,7 +73,7 @@ var loadSampleWithUrl = function(context, url, callback, progress) {
   request.responseType = "arraybuffer";
 
   request.onload = function() {
-    context.decodeAudioData(request.response, callback);
+    context.decodeAudioData(request.response, callback, callback);
   };
 
   progress && (request.onprogress = progress);
@@ -46,7 +88,8 @@ var getBuffersFromSampleNames = function(names, context, callback) {
     var url = ["/sounds/", name, ".wav"].join("");
     queue++;
     loadSampleWithUrl(context, url, function(buffer) {
-      buffers[name] = buffer;
+      if (buffer) buffers[name] = buffer;
+      else console.log("url ", url, " failed to decode");
       if (--queue === 0) callback(buffers);
     });
   });
@@ -158,7 +201,7 @@ var listenForModifiers = function(modifiers, modifiedValues, values) {
   });
 };
 
-var listenForBpmChange = function(bpm, el, form, halftime, context) {
+var listenForBpmChange = function(bpm, el, form, halftime, context, start, stop) {
   var isHalftimed = false;
 
   var updateBpm = function() {
@@ -187,18 +230,31 @@ var listenForBpmChange = function(bpm, el, form, halftime, context) {
   updateBpm();
 
   var lastMetronomeClick = null;
+  var differences = [];
 
   $(document).on("keydown", function(e) {
     if (e.keyCode === 77) {
-      if (lastMetronomeClick && lastMetronomeClick < (context.currentTime + 2)) {
-        el.value = Math.round(60/(context.currentTime - lastMetronomeClick));
+      if (lastMetronomeClick && lastMetronomeClick < (context.currentTime + 0.5)) {
+        differences.push(context.currentTime - lastMetronomeClick);
+        var average = sum(differences) / differences.length;
+
+        el.value = Math.round(60/average);
         lastMetronomeClick = context.currentTime;
         updateBpm();
       } else {
+        differences = [];
         lastMetronomeClick = context.currentTime;
       }
+      stop();
+      start();
     }
   });
+};
+
+var sum = function(arr) {
+  return arr.reduce(function(acc, v) {
+    return acc + v;
+  }, 0);
 };
 
 var listenForSwingChange = function(swing, meter, diagram) {
