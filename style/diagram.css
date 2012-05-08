@@ -379,6 +379,33 @@
   text-align: center;
 }
 
+#measures {
+  height: 20px;
+  width: 150px;
+  position: absolute;
+  top: 5px;
+  right: 188px;
+  display: none;
+}
+
+#measures .measure {
+  height: 20px;
+  width: 20px;
+  color: #888;
+  background: #eee;
+  float: right;
+  text-align: center;
+  font-size: 10px;
+  line-height: 18px;
+  border-left: 1px solid white;
+  cursor: pointer;
+}
+
+#measures .measure:hover {
+  background: #bbb;
+  color: white;
+}
+
 #swing-meter {
   height: 20px;
   width: 143px;

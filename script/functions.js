@@ -65,6 +65,52 @@ var padValues = function(values, userMeasures) {
   return count;
 };
 
+var writeMeasures = function(count, measureBlock) {
+  if (count > 1) {
+    var $block = $(measureBlock).show();
+    var width = $block.width() / count;
+
+    do {
+      $block.append(
+        $('<div/>').addClass('measure').width(width-1).text(count)
+      );
+    } while (--count)
+
+    return $block.children();
+  } else {
+    return $();
+  }
+};
+
+var animateGridForMeasureChanges = function(diagram, grid, $blocks) {
+  var shouldAnimate = true;
+  var queued = false;
+  var $grid = $(grid);
+  var currentFrame = null;
+
+  var animate = function(frame, speed) {
+    $grid.animate({ top: (-((frame||currentFrame)/32 * 93)) }, speed || 100);
+  };
+
+  $(diagram)
+    .on('mouseenter', function() {
+      shouldAnimate = false;
+    })
+    .on('mouseleave', function() {
+      shouldAnimate = true;
+      if (queued) animate();
+    });
+
+  $blocks.on('click', function() {
+    animate((parseInt($(this).text(), 10) - 1) * 32, "slow");
+  });
+
+  return function(i) {
+    currentFrame = i;
+    shouldAnimate ? animate() : (queued = true);
+  };
+};
+
 /* sample loading */
 
 var loadSampleWithUrl = function(context, url, callback, progress) {
@@ -73,7 +119,10 @@ var loadSampleWithUrl = function(context, url, callback, progress) {
   request.responseType = "arraybuffer";
 
   request.onload = function() {
-    context.decodeAudioData(request.response, callback, callback);
+    context.decodeAudioData(request.response, callback, function() {
+      console.error("Could not load", url);
+      callback();
+    });
   };
 
   progress && (request.onprogress = progress);
@@ -147,6 +196,25 @@ var writeModifiersIntoTable = function(length, where, modifiedValues, hats) {
       .get(0));
   }
   return tds;
+};
+
+var makeGridDraggable = function(grid) {
+  var start = false;
+  var $grid = $(grid);
+  var offsetTop = $grid.offset().top;
+
+  $grid
+    .on('mousedown', function(event) {
+      start = event.pageY;
+    })
+    .on('mousemove', function(event) {
+      if (start !== false) {
+        $grid.css('top', event.pageY - offsetTop);
+      }
+    })
+    .on('mouseup', function() {
+      start = false;
+    });
 };
 
 /* listening for value changes */
@@ -423,4 +491,8 @@ var testForAudioSupport = function() {
     });
     throw Error("Funklet can't play here");
   }
+};
+
+var lamb = function(functionString) {
+  return new Function(["_"], 'return (' + functionString + ')')
 };

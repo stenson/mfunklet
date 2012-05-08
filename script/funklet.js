@@ -36,6 +36,12 @@ var alts = params.a
 var prefix = params.pf ? params.pf : "standard";
 var NO_VOLUMES = params.nv ? true : false;
 
+// shortcut to maestro mode
+if (params.maestro) {
+  prefix = "maestro";
+  NO_VOLUMES = true;
+}
+
 var count = padValues(values, measures);
 var mutes = [0, 0, 0];
 var originals = copyArray(values);
@@ -48,6 +54,17 @@ var diagram = getElement("diagram");
 var trs = toarr(diagram.querySelectorAll(".tr"));
 var modifiers = writeModifiersIntoTable(count, trs[0], modifiedValues, values[0]);
 var rows = writeValuesIntoTable(values, trs.slice(1), names);
+
+var grid = getElement("grid");
+var measureBlocks = writeMeasures(count/32, getElement("measures"));
+var updateGrid = animateGridForMeasureChanges(diagram, grid, measureBlocks);
+//makeGridDraggable(grid);
+
+/*
+  --------------------------------------------------------------------
+  now we've set up the player, from here on out is about interactivity
+  --------------------------------------------------------------------
+*/
 
 testForAudioSupport();
 
@@ -111,9 +128,7 @@ var play = function() {
   var hatBack = function(lag) {
     runLightsWithCallback(0, function(_i, vol) {
       var mod = _i % 32;
-      if (_i % 32 === 0) {
-        $("#grid").css({ top: (-(_i/32 * 93)) });
-      }
+      if (_i % 32 === 0) updateGrid(_i);
 
       var modified = modifiedValues[_i];
       var bufferName = bffs.hat.c + vol;
@@ -136,7 +151,7 @@ var play = function() {
             : playSampleWithBuffer(context, buffers[bufferName], 0, 1, rates[0])
         }
       } else if (modified) {
-        playSampleWithBuffer(context, buffers.foothat, 0, 1, rates[0]);
+        playSampleWithBuffer(context, buffers[prefix+"/foothat"], 0, 1, rates[0]);
       }
     });
   };
@@ -156,7 +171,7 @@ var play = function() {
 
     runLightsWithCallback(2, function(_i, vol) {
       if (NO_VOLUMES) {
-        vol && playSampleWithBuffer(context, buffers[bffs.kick.c], 0, 1/(4/vol)*1.5, rates[2]);
+        vol && playSampleWithBuffer(context, buffers[bffs.kick.c], 0, 1/(4/vol)/1.5, rates[2]);
       } else {
         vol && playSampleWithBuffer(context, buffers[bffs.kick.c+vol], 0, 1, rates[2]);
       }
@@ -198,7 +213,7 @@ var play = function() {
   );
   listenForSave(getElement("save"), function() {
     stop();
-    return ([
+    var url = [
       "/funklet.html?vals=", values.map(function(vs){ return vs.join("") }).join(";"),
       "&mods=", modifiedValues.join(".").replace(/NaN|0/g, ""),
       "&b=", bpm.value,
@@ -206,7 +221,10 @@ var play = function() {
       "&jd=", jds.join(","),
       "&r=", rates.join(","),
       "&a=", alts.join("").replace(/false/g,"0").replace(/true/g,"1")
-    ].join(""));
+    ].join("");
+
+    if (params.maestro) url += "&maestro=true";
+    return url;
   });
 };
 
@@ -222,7 +240,7 @@ var loadEnvironment = function() {
     };
 
   var sampleNames = (function(bffs) {
-    return (["foothat"])
+    return ([prefix+"/foothat"])
       .concat(buildNames(bffs.hat.o))
       .concat(buildNames(bffs.hat.a))
       .concat(buildNames(bffs.ohat.o))
