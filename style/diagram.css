@@ -393,7 +393,7 @@
   width: 20px;
   color: #888;
   background: #eee;
-  float: right;
+  float: left;
   text-align: center;
   font-size: 10px;
   line-height: 18px;
@@ -403,6 +403,22 @@
 
 #measures .measure:hover {
   background: #bbb;
+  color: white;
+}
+
+#measures .measure.selected {
+  background: white;
+  color: rgb(238, 153, 162);
+  font-weight: bold;
+}
+
+#measures .measure.current {
+  background: #777;
+  color: white;
+}
+
+#measures .measure.selected.current {
+  background: rgb(238, 153, 162);
   color: white;
 }
 

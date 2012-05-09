@@ -69,12 +69,13 @@ var writeMeasures = function(count, measureBlock) {
   if (count > 1) {
     var $block = $(measureBlock).show();
     var width = $block.width() / count;
+    var i = 1;
 
     do {
       $block.append(
-        $('<div/>').addClass('measure').width(width-1).text(count)
+        $('<div/>').addClass('measure').width(width-1).text(i)
       );
-    } while (--count)
+    } while (++i <= count)
 
     return $block.children();
   } else {
@@ -86,10 +87,14 @@ var animateGridForMeasureChanges = function(diagram, grid, $blocks) {
   var shouldAnimate = true;
   var queued = false;
   var $grid = $(grid);
+  var visibleFrame = 1;
   var currentFrame = null;
 
   var animate = function(frame, speed) {
-    $grid.animate({ top: (-((frame||currentFrame)/32 * 93)) }, speed || 100);
+    var f = (typeof frame == 'number' ? frame : currentFrame) / 32;
+    visibleFrame = f;
+    $grid.animate({ top: (-(f * 93)) }, speed || 0);
+    $blocks.removeClass('selected').eq(visibleFrame).addClass('selected');
   };
 
   $(diagram)
@@ -98,16 +103,18 @@ var animateGridForMeasureChanges = function(diagram, grid, $blocks) {
     })
     .on('mouseleave', function() {
       shouldAnimate = true;
-      if (queued) animate();
+      if (queued) animate(null, 300);
     });
 
   $blocks.on('click', function() {
-    animate((parseInt($(this).text(), 10) - 1) * 32, "slow");
+    lockGrid = true;
+    animate((parseInt($(this).text(), 10) - 1) * 32, 300);
   });
 
   return function(i) {
     currentFrame = i;
     shouldAnimate ? animate() : (queued = true);
+    $blocks.removeClass('current').eq(i/32).addClass('current');
   };
 };
 
@@ -196,25 +203,6 @@ var writeModifiersIntoTable = function(length, where, modifiedValues, hats) {
       .get(0));
   }
   return tds;
-};
-
-var makeGridDraggable = function(grid) {
-  var start = false;
-  var $grid = $(grid);
-  var offsetTop = $grid.offset().top;
-
-  $grid
-    .on('mousedown', function(event) {
-      start = event.pageY;
-    })
-    .on('mousemove', function(event) {
-      if (start !== false) {
-        $grid.css('top', event.pageY - offsetTop);
-      }
-    })
-    .on('mouseup', function() {
-      start = false;
-    });
 };
 
 /* listening for value changes */

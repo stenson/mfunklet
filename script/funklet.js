@@ -58,7 +58,6 @@ var rows = writeValuesIntoTable(values, trs.slice(1), names);
 var grid = getElement("grid");
 var measureBlocks = writeMeasures(count/32, getElement("measures"));
 var updateGrid = animateGridForMeasureChanges(diagram, grid, measureBlocks);
-//makeGridDraggable(grid);
 
 /*
   --------------------------------------------------------------------
