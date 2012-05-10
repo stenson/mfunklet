@@ -406,20 +406,16 @@
   color: white;
 }
 
-#measures .measure.selected {
-  background: white;
-  color: rgb(238, 153, 162);
+#measures .measure.current {
+  background: #999;
+  color: white;
   font-weight: bold;
 }
 
-#measures .measure.current {
-  background: #777;
+#measures .measure.selected {
   color: white;
-}
-
-#measures .measure.selected.current {
-  background: rgb(238, 153, 162);
-  color: white;
+  background: rgb(172, 189, 225);
+  font-weight: bold;
 }
 
 #swing-meter {

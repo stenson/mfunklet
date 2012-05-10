@@ -84,36 +84,45 @@ var writeMeasures = function(count, measureBlock) {
 };
 
 var animateGridForMeasureChanges = function(diagram, grid, $blocks) {
-  var shouldAnimate = true;
-  var queued = false;
   var $grid = $(grid);
   var visibleFrame = 1;
   var currentFrame = null;
+  var shouldAnimate = true;
+  var lockGrid = false;
 
-  var animate = function(frame, speed) {
+  var animate = function(frame, speed, select) {
+    if (lockGrid) return;
+
     var f = (typeof frame == 'number' ? frame : currentFrame) / 32;
     visibleFrame = f;
     $grid.animate({ top: (-(f * 93)) }, speed || 0);
-    $blocks.removeClass('selected').eq(visibleFrame).addClass('selected');
+    $blocks.removeClass('selected');
+    select && $blocks.eq(visibleFrame).addClass('selected');
   };
 
-  $(diagram)
+  $(grid)
     .on('mouseenter', function() {
       shouldAnimate = false;
     })
     .on('mouseleave', function() {
       shouldAnimate = true;
-      if (queued) animate(null, 300);
+      animate(null, 300);
     });
 
   $blocks.on('click', function() {
-    lockGrid = true;
-    animate((parseInt($(this).text(), 10) - 1) * 32, 300);
+    lockGrid = false;
+
+    if ($(this).hasClass('selected')) {
+      animate(null, 300);
+    } else {
+      animate($(this).index() * 32, 300, true);
+      lockGrid = true;
+    }
   });
 
   return function(i) {
     currentFrame = i;
-    shouldAnimate ? animate() : (queued = true);
+    shouldAnimate && animate();
     $blocks.removeClass('current').eq(i/32).addClass('current');
   };
 };
