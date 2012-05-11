@@ -122,7 +122,7 @@ var animateGridForMeasureChanges = function(diagram, grid, $blocks) {
 
   return function(i) {
     currentFrame = i;
-    shouldAnimate && animate();
+    shouldAnimate && animate(null, 100);
     $blocks.removeClass('current').eq(i/32).addClass('current');
   };
 };
