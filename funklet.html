@@ -6,6 +6,8 @@
    <link rel="stylesheet" href="/style/diagram.css"/>
  </head>
  <body>
+  <div id="center">
+   <div id="hover-trigger">
    <div id="outside-container">
      <div id="diagram-container">
        <div id="diagram">
@@ -48,13 +50,30 @@
            </div>
            <div id="unsupported">?</div>
            <div id="explanation">Currently the Funklet machine only runs in Chrome (and Webkit nightlies, if that phrase means anything to you). It may soon run in Firefox too.</div>
+           <div id="divisor">
+             <input id="bpm-divisor" type="text" value="1"/>
+            </div>
            <button class="control" id="start">&#9654;</button>
            <button class="control" id="stop">&#9724;</button>
-           &nbsp;&nbsp;&nbsp;&nbsp;<span>@</span><input id="bpm" type="text" value=""/><span>BPM</span>
+           &nbsp;
+           <span>@</span>
+           <input id="bpm" type="text" value=""/>
+           <span>BPM</span>
          </form>
-         <a href="#" id="half-time" style="left:180px" class="grey-button hoveronly">½</a>
-         <a href="#" id="save" target="_blank" style="left:220px" class="grey-button hoveronly">¶</a>
-         <a href="#" id="shortcuts" style="left:270px" class="grey-button hoveronly">⚡</a>
+
+         <a href="#" id="save" target="_blank" style="left:180px" class="grey-button hoveronly">¶</a>
+         <a href="#" id="midi" target="_blank" style="left:220px" class="grey-button hoveronly">ℳ</a>
+         <a href="#" id="shortcuts" class="grey-button hoveronly">⚡</a>
+
+         <!-- <a href="#" id="export"></a>
+         <div id="export-menu">
+          <form>
+            <select>
+              <option>MIDI</option>
+              <option>WAV</option>
+            </select>
+          </form>
+         </div> -->
          <div id="measures"></div>
          <div id="swing-meter" data-swing="0">
            <div></div>
@@ -84,9 +103,11 @@
        </div>
      </div>
    </div>
-   <script src="/script/jquery.js"></script>
-   <script src="/script/es5-shim.js"></script>
-   <script src="/script/functions.js"></script>
-   <script src="/script/funklet.js"></script>
+   </div> <!--end of hover trigger -->
+  </div>
+  <script src="/script/jquery.js"></script>
+  <script src="/script/es5-shim.js"></script>
+  <script src="/script/functions.js"></script>
+  <script src="/script/funklet.js"></script>
  </body>
 </html>

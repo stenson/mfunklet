@@ -4,9 +4,30 @@
   font-family: "Helvetica Neue", Arial, Helvetica;
 }
 
+html, body {
+  height: 100%;
+}
+
+#center {
+  height: 0px;
+  width: 0px;
+  top: 50%;
+  left: 50%;
+  position: absolute;
+}
+
+#hover-trigger {
+  position: absolute;
+  height: 195px;
+  width: 885px;
+  top: -110px;
+  left: -417px;
+}
+
 #outside-container {
   width: 727px;
-  margin: auto auto;
+  margin-top: -40px;
+  margin-left: 50px;
   padding: 25px 0;
   position: relative;
 }
@@ -371,17 +392,43 @@
 }
 
 #bpm {
-  width: 50px;
+  width: 45px;
   font-family: "Helvetica Neue", ;
   font-size: 24px;
   color: #777;
   border: none;
   text-align: center;
+  outline: none;
+}
+
+#divisor {
+  position: absolute;
+  top: 0px;
+  left: 58px;
+  height: 41px;
+}
+
+#bpm-divisor {
+  text-align: center;
+  width: 45px;
+  font-size: 12px;
+  border: none;
+  color: #bbb;
+  font-weight: bold;
+  outline: none;
+  border-top: 2px solid #ddd;
+  padding: 2px 0px;
+  margin-top: 27px;
+  visibility: hidden;
+}
+
+#divisor:hover #bpm-divisor {
+  visibility: visible;
 }
 
 #measures {
   height: 20px;
-  width: 150px;
+  width: 125px;
   position: absolute;
   top: 5px;
   right: 188px;
@@ -446,7 +493,7 @@
 
 .grey-button {
   position: absolute;
-  top: 2px;
+  top: 0px;
   left: 165px;
   padding: 5px;
   background: #ddd;
@@ -470,14 +517,24 @@
 
 #shortcuts {
   font-size: 17px;
+  left: -48px;
+  top: -94px;
+  background:
+  white;
+  color:
+  #999;
 }
 
-#outside-container .hoveronly {
+#hover-trigger .hoveronly {
   opacity: 0.1;
   -webkit-transition: opacity 0.1s linear;
 }
 
-#outside-container:hover .hoveronly {
+#hover-trigger .hoveronly.hidden {
+  opacity: 0.0;
+}
+
+#hover-trigger:hover .hoveronly {
   opacity: 1.0;
 }
 
@@ -534,14 +591,14 @@
 #shortcuts-box {
   display: none;
   position: absolute;
-  top: 0px;
+  top: 30px;
   left: -15px;
   background: rgba(255, 255, 255, 0.95);
   z-index: 100;
   font-size: 15px;
   color: #555;
-  -webkit-box-shadow:0 0 25px rgba(0,0,0,0.3);
-  width: 757px;
+  -webkit-box-shadow:0 0 15px rgba(0,0,0,0.1);
+  width: 843px;
   height: 203px;
   font-weight: bold;
 }
@@ -549,7 +606,9 @@
 #shortcuts-box ul {
   list-style: none;
   display: block;
-  position: absolute;
-  bottom: 15px;
-  left: 15px;
+  padding: 15px 125px 15px 15px;
+}
+
+#shortcuts-box li {
+  margin-bottom: 10px;
 }

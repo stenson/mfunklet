@@ -205,26 +205,32 @@ var play = function() {
   listenForBpmChange(bpm,
     getElement("bpm"),
     getElement("bpm-form"),
-    getElement("half-time"),
+    getElement("bpm-divisor"),
     context,
     start,
     stop
   );
-  listenForSave(getElement("save"), function() {
-    stop();
-    var url = [
-      "/funklet.html?vals=", values.map(function(vs){ return vs.join("") }).join(";"),
-      "&mods=", modifiedValues.join(".").replace(/NaN|0/g, ""),
-      "&b=", bpm.value,
-      "&s=", (swing.value*12),
-      "&jd=", jds.join(","),
-      "&r=", rates.join(","),
-      "&a=", alts.join("").replace(/false/g,"0").replace(/true/g,"1")
-    ].join("");
 
-    if (params.maestro) url += "&maestro=true";
-    return url;
-  });
+  var stopAndLinkTo = function(base) {
+    return function() {
+      stop();
+      var url = [
+        base + "?vals=", values.map(function(vs){ return vs.join("") }).join(";"),
+        "&mods=", modifiedValues.join(".").replace(/NaN|0/g, ""),
+        "&b=", bpm.value,
+        "&s=", (swing.value*12),
+        "&jd=", jds.join(","),
+        "&r=", rates.join(","),
+        "&a=", alts.join("").replace(/false/g,"0").replace(/true/g,"1")
+      ].join("");
+
+      if (params.maestro) url += "&maestro=true";
+      return url;
+    };
+  };
+
+  listenForSave(getElement("save"), stopAndLinkTo("/funklet.html"));
+  listenForSave(getElement("midi"), stopAndLinkTo("http://radiant-sunset-8537.herokuapp.com/funklet.mid"));
 };
 
 var loadEnvironment = function() {
@@ -250,7 +256,7 @@ var loadEnvironment = function() {
       .concat(NO_VOLUMES ? buildNames(bffs.kick.a) : []);
   })(bffs);
 
-  loadSampleWithUrl(context, "/sounds/spring.wav", function(spring) {
+  loadSampleWithUrl(context, "/sounds/spring.wav", "/spring", function(spring) {
     convolver.buffer = spring;
     playSampleWithBuffer(context, spring, 0, 0); // start the audio context
     $("#indicator-outer").hide();

@@ -129,7 +129,17 @@ var animateGridForMeasureChanges = function(diagram, grid, $blocks) {
 
 /* sample loading */
 
-var loadSampleWithUrl = function(context, url, callback, progress) {
+var loadSampleWithUrl = function(context, url, name, callback, progress) {
+  if (false) {
+    authorDigitalBuffer(context, url, name, callback);
+    progress && progress({
+      total: 100,
+      loaded: 100
+    });
+    return;
+    // need to figure out how to call the progress function
+  }
+
   var request = new XMLHttpRequest();
   request.open("GET", url, true);
   request.responseType = "arraybuffer";
@@ -145,6 +155,41 @@ var loadSampleWithUrl = function(context, url, callback, progress) {
   request.send();
 };
 
+var digitalBufferMap = {
+  foothat:  [ 550, 0.5, 0.05 ],
+  hat:      [ ],
+  ahat:     [ ],
+  ohat:     [ ],
+  aohat:    [ ],
+  snare:    [ ],
+  asnare:   [ ],
+  kick:     [ ],
+  akick:    [ ]
+};
+
+var authorDigitalBuffer = function(context, url, name, callback) {
+  var sampleName = name.split("/")[1];
+  callback(writeSineBuffer.apply(null, [context].concat(digitalBufferMap[sampleName])));
+};
+
+var writeSineBuffer = function(context, pitch, noise, volume) {
+  console.log(pitch, noise, volume);
+  var buffer = context.createBuffer(1, 44100/4, 44100);
+  var c0 = buffer.getChannelData(0);
+  var amp = volume || 0.5;
+
+  for (var i = 0; i < (44100/4); i++) {
+    if (i > 1000 && amp > 0) {
+      amp -= 0.05
+    }
+    c0[i] = amp * Math.sin(i / (44100 / (220 * 2 * Math.PI)));
+    //c0[i] += (Math.random() > 0.5) ? (Math.random()/20) : (-Math.random()/20);
+    //c0[i] = amp * Math.random();
+  }
+
+  return buffer;
+};
+
 var getBuffersFromSampleNames = function(names, context, callback) {
   var buffers = {};
   var queue = 0;
@@ -152,7 +197,7 @@ var getBuffersFromSampleNames = function(names, context, callback) {
   names.map(function(name, i) {
     var url = ["/sounds/", name, ".wav"].join("");
     queue++;
-    loadSampleWithUrl(context, url, function(buffer) {
+    loadSampleWithUrl(context, url, name, function(buffer) {
       if (buffer) buffers[name] = buffer;
       else console.log("url ", url, " failed to decode");
       if (--queue === 0) callback(buffers);
@@ -266,54 +311,42 @@ var listenForModifiers = function(modifiers, modifiedValues, values) {
   });
 };
 
-var listenForBpmChange = function(bpm, el, form, halftime, context, start, stop) {
-  var isHalftimed = false;
+var blurKeyup = function(el, callback) {
+  var time = null;
+
+  el.addEventListener("blur", callback, true);
+  el.addEventListener("keyup", function() {
+    clearTimeout(time);
+    time = setTimeout(callback, 300);
+  }, true);
+};
+
+var listenForBpmChange = function(bpm, el, form, divisor, context, start, stop) {
+  var divisorValue = 1;
 
   var updateBpm = function() {
     setTimeout(function() {
       var i = parseInt(el.value, 10);
       if (i && i !== bpm.value) bpm.value = i;
       el.value = bpm.value;
-      isHalftimed && (bpm.value = bpm.value/2);
+      bpm.value = bpm.value / divisorValue;
     }, 0);
   };
 
-  el.addEventListener("blur", updateBpm, true);
+  blurKeyup(el, updateBpm);
 
   form.addEventListener("submit", function(e) {
     e.preventDefault();
-  }, true);
-
-  halftime.addEventListener("click", function(e) {
-    e.preventDefault();
-    isHalftimed = !isHalftimed;
-    $(halftime)[isHalftimed?"addClass":"removeClass"]("on");
     updateBpm();
   }, true);
 
+  blurKeyup(divisor, function() {
+    divisorValue = parseFloat(divisor.value) || 1;
+    updateBpm();
+  });
+
   el.value = bpm.value;
   updateBpm();
-
-  var lastMetronomeClick = null;
-  var differences = [];
-
-  $(document).on("keydown", function(e) {
-    if (e.keyCode === 77) {
-      if (lastMetronomeClick && lastMetronomeClick < (context.currentTime + 0.5)) {
-        differences.push(context.currentTime - lastMetronomeClick);
-        var average = sum(differences) / differences.length;
-
-        el.value = Math.round(60/average);
-        lastMetronomeClick = context.currentTime;
-        updateBpm();
-      } else {
-        differences = [];
-        lastMetronomeClick = context.currentTime;
-      }
-      stop();
-      start();
-    }
-  });
 };
 
 var sum = function(arr) {
@@ -417,7 +450,6 @@ var listenForAlts = function(alts, bffs, els, trs) {
 
 var listenForSave = function(button, callback) {
   button.addEventListener("click", function(e) {
-    //e.preventDefault();
     button.href = callback();
   }, true);
 };
@@ -488,8 +520,4 @@ var testForAudioSupport = function() {
     });
     throw Error("Funklet can't play here");
   }
-};
-
-var lamb = function(functionString) {
-  return new Function(["_"], 'return (' + functionString + ')')
 };
