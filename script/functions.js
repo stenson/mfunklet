@@ -89,6 +89,7 @@ var animateGridForMeasureChanges = function(diagram, grid, $blocks) {
   var currentFrame = null;
   var shouldAnimate = true;
   var lockGrid = false;
+  var defaultSpeed = 400;
 
   var animate = function(frame, speed, select) {
     if (lockGrid) return;
@@ -106,23 +107,26 @@ var animateGridForMeasureChanges = function(diagram, grid, $blocks) {
     })
     .on('mouseleave', function() {
       shouldAnimate = true;
-      animate(null, 300);
+      animate(null, defaultSpeed);
     });
 
   $blocks.on('click', function() {
     lockGrid = false;
 
     if ($(this).hasClass('selected')) {
-      animate(null, 300);
+      animate(null, defaultSpeed);
+      $(diagram).trigger('unlock');
     } else {
-      animate($(this).index() * 32, 300, true);
+      var index = $(this).index();
+      animate(index * 32, defaultSpeed, true);
       lockGrid = true;
+      $(diagram).trigger('lock', { measure: index });
     }
   });
 
   return function(i) {
     currentFrame = i;
-    shouldAnimate && animate(null, 100);
+    shouldAnimate && animate(null, 200);
     $blocks.removeClass('current').eq(i/32).addClass('current');
   };
 };
@@ -173,7 +177,6 @@ var authorDigitalBuffer = function(context, url, name, callback) {
 };
 
 var writeSineBuffer = function(context, pitch, noise, volume) {
-  console.log(pitch, noise, volume);
   var buffer = context.createBuffer(1, 44100/4, 44100);
   var c0 = buffer.getChannelData(0);
   var amp = volume || 0.5;
@@ -315,10 +318,6 @@ var blurKeyup = function(el, callback) {
   var time = null;
 
   el.addEventListener("blur", callback, true);
-  el.addEventListener("keyup", function() {
-    clearTimeout(time);
-    time = setTimeout(callback, 300);
-  }, true);
 };
 
 var listenForBpmChange = function(bpm, el, form, divisor, context, start, stop) {
@@ -328,6 +327,7 @@ var listenForBpmChange = function(bpm, el, form, divisor, context, start, stop) 
     setTimeout(function() {
       var i = parseInt(el.value, 10);
       if (i && i !== bpm.value) bpm.value = i;
+      divisorValue = parseFloat(divisor.value) || 1;
       el.value = bpm.value;
       bpm.value = bpm.value / divisorValue;
     }, 0);
@@ -341,7 +341,6 @@ var listenForBpmChange = function(bpm, el, form, divisor, context, start, stop) 
   }, true);
 
   blurKeyup(divisor, function() {
-    divisorValue = parseFloat(divisor.value) || 1;
     updateBpm();
   });
 

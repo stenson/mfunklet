@@ -1,7 +1,7 @@
 * {
   padding: 0;
   margin: 0;
-  font-family: "Helvetica Neue", Arial, Helvetica;
+  font-family: "Helvetica Neue", Arial, sans-serif;
 }
 
 html, body {
@@ -393,7 +393,7 @@ html, body {
 
 #bpm {
   width: 45px;
-  font-family: "Helvetica Neue", ;
+  font-family: "Helvetica Neue", Arial, sans-serif;
   font-size: 24px;
   color: #777;
   border: none;
@@ -405,7 +405,8 @@ html, body {
   position: absolute;
   top: 0px;
   left: 58px;
-  height: 41px;
+  height: 55px;
+  width: 47px;
 }
 
 #bpm-divisor {
@@ -418,8 +419,13 @@ html, body {
   outline: none;
   border-top: 2px solid #ddd;
   padding: 2px 0px;
-  margin-top: 27px;
   visibility: hidden;
+}
+
+#bpm-spacer {
+  width: 45px;
+  display: inline-block;
+  height: 22px;
 }
 
 #divisor:hover #bpm-divisor {

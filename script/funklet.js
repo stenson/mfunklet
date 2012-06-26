@@ -43,6 +43,7 @@ if (params.maestro) {
 }
 
 var count = padValues(values, measures);
+var measures = count / 32; // re-calculate
 var mutes = [0, 0, 0];
 var originals = copyArray(values);
 var length = count - 1;
@@ -59,11 +60,8 @@ var grid = getElement("grid");
 var measureBlocks = writeMeasures(count/32, getElement("measures"));
 var updateGrid = animateGridForMeasureChanges(diagram, grid, measureBlocks);
 
-/*
-  --------------------------------------------------------------------
-  now we've set up the player, from here on out is about interactivity
-  --------------------------------------------------------------------
-*/
+
+
 
 testForAudioSupport();
 
@@ -81,8 +79,8 @@ listenForRateChanges(rates, arrFromSel(".rate"), trs.slice(1));
 listenForAlts(alts, bffs, arrFromSel(".alt"), trs.slice(1));
 
 var gains = {
-  dry: 1.0,
-  wet: 0.1
+  dry: NO_VOLUMES ? 1.4 : 1.2,
+  wet: NO_VOLUMES ? 0.0 : 0.5
 };
 
 listenForGainChange(gains, "dry", 86);
@@ -110,10 +108,13 @@ var play = function() {
   var intervals = [];
 
   var i = [0,0,0];
+  var lastI = [0,0,0];
+  var lockedMeasure = false;
+  var measureLength = 31;
 
   var runLightsWithCallback = function(j, cback) {
     var _i = i[j];
-    var last = ((_i - 1) >= 0) ? (_i-1) : length;
+    var last = lastI[j];
     var vol = values[j][_i];
 
     rows[j][last].className = "td";
@@ -121,8 +122,24 @@ var play = function() {
 
     (!mutes[j]) && cback(_i, vol); // yield
 
-    i[j] = (_i === length) ? 0 : (_i + 1);
+    lastI[j] = _i;
+
+    if (lockedMeasure && _i === measureLength * lockedMeasure) {
+      i[j] = measureLength * (lockedMeasure - 1);
+    } else {
+      i[j] = (_i === length) ? 0 : (_i + 1);
+    }
   };
+
+  $(diagram)
+    .on('unlock', function() {
+      lockedMeasure = false;
+    })
+    .on('lock', function(_, data) {
+      lockedMeasure = data.measure + 1;
+    });
+
+  var volume = function(v) { return 1/(4/v); };
 
   var hatBack = function(lag) {
     runLightsWithCallback(0, function(_i, vol) {
@@ -141,12 +158,12 @@ var play = function() {
       if (vol) {
         if (modified) {
           outstandingOpen = NO_VOLUMES ?
-            playSampleWithBuffer(context, buffers[modifiedBufferName.slice(0,-1)], 0, 1/(4/vol)/7, rates[0])
+            playSampleWithBuffer(context, buffers[modifiedBufferName.slice(0,-1)], 0, volume(vol), rates[0])
             : playSampleWithBuffer(context, buffers[modifiedBufferName], 0, 1, rates[0]);
         }
         else {
           NO_VOLUMES ?
-            playSampleWithBuffer(context, buffers[bufferName.slice(0,-1)], 0, 1/(4/vol)/7, rates[0])
+            playSampleWithBuffer(context, buffers[bufferName.slice(0,-1)], 0, volume(vol), rates[0])
             : playSampleWithBuffer(context, buffers[bufferName], 0, 1, rates[0])
         }
       } else if (modified) {
@@ -158,7 +175,7 @@ var play = function() {
   var snareBack = function(lag) {
     runLightsWithCallback(1, function(_i, vol) {
       if (NO_VOLUMES) {
-        vol && playSampleWithBuffer(context, buffers[bffs.snare.c], 0, 1/(4/vol)/1.5, rates[1]);
+        vol && playSampleWithBuffer(context, buffers[bffs.snare.c], 0, volume(vol), rates[1]);
       } else {
         vol && playSampleWithBuffer(context, buffers[bffs.snare.c+vol], 0, 1, rates[1]);
       }
@@ -170,7 +187,7 @@ var play = function() {
 
     runLightsWithCallback(2, function(_i, vol) {
       if (NO_VOLUMES) {
-        vol && playSampleWithBuffer(context, buffers[bffs.kick.c], 0, 1/(4/vol)/1.5, rates[2]);
+        vol && playSampleWithBuffer(context, buffers[bffs.kick.c], 0, volume(vol), rates[2]);
       } else {
         vol && playSampleWithBuffer(context, buffers[bffs.kick.c+vol], 0, 1, rates[2]);
       }
