@@ -80,7 +80,7 @@ listenForAlts(alts, bffs, arrFromSel(".alt"), trs.slice(1));
 
 var gains = {
   dry: NO_VOLUMES ? 1.4 : 1.2,
-  wet: NO_VOLUMES ? 0.0 : 0.5
+  wet: NO_VOLUMES ? 0.0 : 0.2
 };
 
 listenForGainChange(gains, "dry", 86);
@@ -124,8 +124,8 @@ var play = function() {
 
     lastI[j] = _i;
 
-    if (lockedMeasure && _i === measureLength * lockedMeasure) {
-      i[j] = measureLength * (lockedMeasure - 1);
+    if (lockedMeasure && _i === (lockedMeasure - 1) * 32 + 31) {
+      i[j] = _i - measureLength;
     } else {
       i[j] = (_i === length) ? 0 : (_i + 1);
     }
@@ -196,6 +196,10 @@ var play = function() {
 
   var start = function() {
     runCount = 0;
+    if (lockedMeasure) {
+      var zero = (32 * (lockedMeasure - 1));
+      i = [zero, zero, zero];
+    }
 
     startButton.style.display = "none";
     stopButton.style.display = "block";
@@ -207,7 +211,7 @@ var play = function() {
   };
 
   var stop = function() {
-    i = [0,0,0]; // reset counters to start
+    i = [0, 0, 0]; // reset counters to start
     stopButton.style.display = "none";
     startButton.style.display = "block";
     intervals.map(clearInterval);
